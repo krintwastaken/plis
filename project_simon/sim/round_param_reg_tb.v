@@ -4,9 +4,9 @@ module round_param_reg_tb;
 
     parameter integer WIDTH = 8;
 
-    reg             clk;
-    reg             rst;
-    reg             load;
+    reg clk;
+    reg rst;
+    reg load;
     reg [WIDTH-1:0] d;
     wire [WIDTH-1:0] q;
 

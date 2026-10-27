@@ -1,36 +1,38 @@
-module index_counter
-#(
-    parameter WIDTH = 4
-)
-(
-    input  wire             clk,        // Синхросигнал
-    input  wire             reset,      // Синхронный сброс
-    input  wire             load,       // Загрузка начального значения
-    input  wire             en_count,   // Разрешение счета
-    input  wire [WIDTH-1:0] data_load,  // Значение для загрузки
-    input  wire [WIDTH-1:0] max_len,    // Текущая длина последовательности
-    output reg  [WIDTH-1:0] count,      // Текущий индекс символа
-    output reg              over        // Флаг завершения последовательности
+`timescale 1ns / 1ps
+
+module index_counter #(
+    parameter integer WIDTH = 4
+)(
+    input wire clk,
+    input wire reset,
+    input wire load,
+    input wire en_count,
+    input wire [WIDTH-1:0] data_load,
+    input wire [WIDTH-1:0] max_len,
+    output reg [WIDTH-1:0] count,
+    output reg over
 );
 
     always @(posedge clk) begin
         if (reset) begin
             count <= {WIDTH{1'b0}};
-            over  <= 1'b0;
-        end
-        else if (load) begin
+            over <= 1'b0;
+        end else if (load) begin
             count <= data_load;
-            over  <= (data_load >= (max_len - 1'b1)) && (max_len != {WIDTH{1'b0}});
-        end
-        else if (en_count) begin
-            if (count >= (max_len - 1'b1)) begin
-                // Достигнут конец последовательности: фиксация флага over и останов счета
-                over  <= 1'b1;
+            if (max_len == {WIDTH{1'b0}}) begin
+                over <= 1'b1;
+            end else begin
+                over <= (data_load >= (max_len - 1'b1));
             end
-            else begin
+        end else if (en_count) begin
+            if (max_len == {WIDTH{1'b0}}) begin
+                count <= {WIDTH{1'b0}};
+                over <= 1'b1;
+            end else if (count >= (max_len - 1'b1)) begin
+                over <= 1'b1;
+            end else begin
                 count <= count + 1'b1;
-                // Формирование over на последнем шаге
-                over  <= ((count + 1'b1) >= (max_len - 1'b1));
+                over <= ((count + 1'b1) >= (max_len - 1'b1));
             end
         end
     end
