@@ -3,7 +3,7 @@
 module sequence_ram_tb;
 
     parameter integer DATA_WIDTH = 2;
-    parameter integer DEPTH = 10; // Глубина намеренно не степень двойки (ADDR_WIDTH = 4)
+    parameter integer DEPTH = 10;
     parameter integer ADDR_WIDTH = (DEPTH < 2) ? 1 : $clog2(DEPTH);
 
     reg clk;
@@ -36,18 +36,18 @@ module sequence_ram_tb;
         din = {DATA_WIDTH{1'b0}};
         errors = 0;
 
-        // Запись в допустимые адреса (0..9)
+        // 1. Запись в допустимые адреса (0..DEPTH-1)
         @(negedge clk);
         for (i = 0; i < DEPTH; i = i + 1) begin
             we = 1'b1;
             addr = i[ADDR_WIDTH-1:0];
-            din = i[DATA_WIDTH-1:0];
+            din = (i + 1) % 4;
             shadow_mem[i] = din;
             @(negedge clk);
         end
         we = 1'b0;
 
-        // Синхронное чтение допустимых адресов (задержка 1 такт)
+        // 2. Синхронное чтение всех допустимых адресов с контролем задержки 1 такт
         for (i = 0; i < DEPTH; i = i + 1) begin
             addr = i[ADDR_WIDTH-1:0];
             @(posedge clk);
@@ -59,18 +59,58 @@ module sequence_ram_tb;
             @(negedge clk);
         end
 
-        // Проверка недопустимого адреса (addr = 13 >= DEPTH = 10)
-        addr = 4'd13;
-        din = 2'h3;
-        we = 1'b1; // Попытка записи за пределы памяти
+        // 3. Проверка сохранения данных при запрете записи (we = 0)
+        addr = 4'd3;
+        din = ~shadow_mem[3];
+        we = 1'b0;
         @(posedge clk);
+        #1;
+        if (dout !== shadow_mem[3]) begin
+            $display("ERROR hold mode at addr 3: dout = %b, expected = %b", dout, shadow_mem[3]);
+            errors = errors + 1;
+        end
+        @(negedge clk);
+
+        // 4. Проверка одновременного чтения и записи (Read-First) по адресу 2
+        addr = 4'd2;
+        din = 2'h0;
+        we = 1'b1;
+        @(posedge clk);
+        #1;
+        if (dout !== shadow_mem[2]) begin
+            $display("ERROR Read-First at addr 2: dout = %b, expected old = %b", dout, shadow_mem[2]);
+            errors = errors + 1;
+        end
         @(negedge clk);
         we = 1'b0;
         @(posedge clk);
         #1;
-        if (dout !== {DATA_WIDTH{1'b0}}) begin
-            $display("ERROR: Invalid address must return 0, got %b", dout);
+        if (dout !== 2'h0) begin
+            $display("ERROR new value after Read-First at addr 2: dout = %b", dout);
             errors = errors + 1;
+        end
+        @(negedge clk);
+
+        // 5. Проверка обращения к недопустимым адресам (addr >= DEPTH, адреса 10..15)
+        for (i = DEPTH; i < (1 << ADDR_WIDTH); i = i + 1) begin
+            addr = i[ADDR_WIDTH-1:0];
+            din = 2'h3;
+            we = 1'b1;
+            @(posedge clk);
+            #1;
+            if (dout !== {DATA_WIDTH{1'b0}}) begin
+                $display("ERROR invalid addr %0d on write: dout = %b, expected 0", i, dout);
+                errors = errors + 1;
+            end
+            @(negedge clk);
+            we = 1'b0;
+            @(posedge clk);
+            #1;
+            if (dout !== {DATA_WIDTH{1'b0}}) begin
+                $display("ERROR invalid addr %0d on read: dout = %b, expected 0", i, dout);
+                errors = errors + 1;
+            end
+            @(negedge clk);
         end
 
         #20;

@@ -25,7 +25,7 @@ module stats_ram #(
         end
     end
 
-    // Синхронная запись и чтение с блокировкой недопустимых адресов
+    // Синхронная запись и чтение (Read-First) с защитой от выхода за пределы DEPTH
     always @(posedge clk) begin
         if (we && (addr < DEPTH)) begin
             ram[addr] <= din;

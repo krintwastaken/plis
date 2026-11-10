@@ -22,7 +22,7 @@ module sequence_rom #(
         end
     end
 
-    // Безопасное чтение при обращении за пределы DEPTH
+    // Безопасное чтение при выходе за пределы DEPTH
     assign data = (addr < DEPTH) ? rom[addr] : {DATA_WIDTH{1'b0}};
 
 endmodule

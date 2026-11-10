@@ -1,8 +1,8 @@
 `timescale 1ns / 1ns
 
 module score_counter #(
-    parameter SCORE_WIDTH = 8,
-    parameter POINTS_WIDTH = 4
+    parameter integer SCORE_WIDTH = 8,
+    parameter integer POINTS_WIDTH = 4
 )(
     input wire clk,
     input wire rst,
@@ -12,13 +12,18 @@ module score_counter #(
     output reg [SCORE_WIDTH-1:0] score
 );
 
-    // Максимальное значение для насыщения счетчика
+    localparam integer SUM_WIDTH = (SCORE_WIDTH > POINTS_WIDTH) ? (SCORE_WIDTH + 1) : (POINTS_WIDTH + 1);
     localparam [SCORE_WIDTH-1:0] MAX_SCORE = {SCORE_WIDTH{1'b1}};
 
-    // Расширенная шина суммы для контроля выхода за разрядную сетку
-    wire [SCORE_WIDTH:0] next_score;
+    wire [SUM_WIDTH-1:0] score_ext;
+    wire [SUM_WIDTH-1:0] points_ext;
+    wire [SUM_WIDTH-1:0] max_score_ext;
+    wire [SUM_WIDTH-1:0] next_score;
 
-    assign next_score = {1'b0, score} + {{(SCORE_WIDTH+1-POINTS_WIDTH){1'b0}}, points};
+    assign score_ext = {{(SUM_WIDTH - SCORE_WIDTH){1'b0}}, score};
+    assign points_ext = {{(SUM_WIDTH - POINTS_WIDTH){1'b0}}, points};
+    assign max_score_ext = {{(SUM_WIDTH - SCORE_WIDTH){1'b0}}, MAX_SCORE};
+    assign next_score = score_ext + points_ext;
 
     always @(posedge clk) begin
         if (rst) begin
@@ -26,7 +31,7 @@ module score_counter #(
         end else if (clear) begin
             score <= {SCORE_WIDTH{1'b0}};
         end else if (add_score) begin
-            if (next_score > {1'b0, MAX_SCORE}) begin
+            if (next_score > max_score_ext) begin
                 score <= MAX_SCORE;
             end else begin
                 score <= next_score[SCORE_WIDTH-1:0];

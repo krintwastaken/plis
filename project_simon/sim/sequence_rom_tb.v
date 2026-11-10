@@ -22,7 +22,6 @@ module sequence_rom_tb;
         .data(data)
     );
 
-    // Эталонная цепочка строго соответствует patterns.mem
     function [DATA_WIDTH-1:0] get_expected;
         input integer idx;
         begin
@@ -60,6 +59,8 @@ module sequence_rom_tb;
             if (data !== expected) begin
                 $display("ERROR: addr = %0d, data = %b, expected = %b", addr, data, expected);
                 errors = errors + 1;
+            end else begin
+                $display("OK: addr = %0d, symbol = %0d", addr, data);
             end
         end
 
