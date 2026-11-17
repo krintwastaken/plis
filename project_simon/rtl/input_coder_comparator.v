@@ -1,8 +1,8 @@
 `timescale 1ns / 1ns
 
 module input_coder_comparator #(
-    parameter NUM_INPUTS = 4,
-    parameter SYM_WIDTH = 2
+    parameter integer NUM_INPUTS = 4,
+    parameter integer SYM_WIDTH = 2
 )(
     input wire [NUM_INPUTS-1:0] btn_in,
     input wire [SYM_WIDTH-1:0] pattern_sym,
@@ -13,11 +13,9 @@ module input_coder_comparator #(
 );
 
     integer i;
-
     always @(*) begin
         valid = 1'b0;
         user_sym = {SYM_WIDTH{1'b0}};
-
         for (i = 0; i < NUM_INPUTS; i = i + 1) begin
             if (btn_in[i]) begin
                 user_sym = i[SYM_WIDTH-1:0];

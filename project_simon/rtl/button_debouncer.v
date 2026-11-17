@@ -12,7 +12,7 @@ module button_debouncer #(
 );
 
     localparam integer CNT_MAX = (CLK_FREQ / 1000) * DEBOUNCE_MS;
-    localparam integer CNT_WIDTH = $clog2(CNT_MAX + 1);
+    localparam integer CNT_WIDTH = (CNT_MAX < 2) ? 1 : $clog2(CNT_MAX + 1);
 
     reg [CNT_WIDTH-1:0] timer;
     reg [2:0] sync_reg;
